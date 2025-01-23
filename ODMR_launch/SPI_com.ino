@@ -9,6 +9,18 @@ void spiCommand(SPIClass *spi, byte data) {
   spi->endTransaction();
 }
 
+// if DIN held high for 40 VSPI_SCLK cycles - AD7192 resets
+void AD7192_Reset() {
+  digitalWrite(VSPI_MOSI, HIGH);
+  for (int i = 0; i < 40; i++){
+    digitalWrite(VSPI_SCLK, HIGH);
+    delay(1);
+    digitalWrite(VSPI_SCLK, LOW);
+    // equivalent of 1 cycle //
+  }
+  digitalWrite(VSPI_MOSI, LOW);
+}
+
 // Still looking into way to read the data from pins
 
 // people be telling something like this should work - line 17
