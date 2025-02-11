@@ -15,4 +15,4 @@ const byte conf2		 = 0b10000000; // CR15 - CR8 channel select bits
 const byte conf3		 = 0b00000101; // CR7  - CR0 gain == 32 (+-5V), biipolar
 
 byte out1, out2, out3, pin;
-uint33_t var;
+uint32_t var;
