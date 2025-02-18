@@ -12,7 +12,7 @@ const byte mode3 		 = 0b01100000; // MR0  - MR7	FS == 500
 const byte con_reg   = 0b00010000; // write data to configuration register - 24 bits
 const byte conf1 		 = 0b00000000; // chop enabled - CR16 - CR23
 const byte conf2		 = 0b10000000; // CR15 - CR8 channel select bits
-const byte conf3		 = 0b00000101; // CR7  - CR0 gain == 32 (+-5V), biipolar
+const byte conf3		 = 0b00000000; // CR7  - CR0 gain == 32 (+-5V), biipolar
 
 byte out1, out2, out3, pin;
-uint32_t var;
+int32_t var;
