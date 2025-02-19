@@ -6,7 +6,7 @@
 
 // PWM setup
 // int freq;
-// int temp;
+int32_t temp;
 // for messages: 0xFF == 0b11111111
 
 /*
@@ -48,30 +48,33 @@ void setup() {
 	// Explicitly setting pins as output/input
   pinMode(vspi -> pinSS(), OUTPUT);  
   pinMode(hspi -> pinSS(), OUTPUT);  
+
 	// Ensure CS is high at initialisation
 	digitalWrite(vspi -> pinSS(), HIGH);
 	digitalWrite(hspi -> pinSS(), HIGH);
 
+	// AMP config
 	digitalWrite(hspi -> pinSS(), LOW);
 	hspi -> transfer(0x00);
 	hspi -> transfer(an_pin_conf);
 	hspi -> transfer(an_pin1);
   digitalWrite(hspi -> pinSS(), HIGH);
-
+	delay(1);
 	digitalWrite(hspi -> pinSS(), LOW);
 	hspi -> transfer(0x00);
 	hspi -> transfer(demod);
 	hspi -> transfer(demod1);
   digitalWrite(hspi -> pinSS(), HIGH);
-
+	delay(1);
 	digitalWrite(hspi -> pinSS(), LOW);
 	hspi -> transfer(0x00);
 	hspi -> transfer(clkin_conf);
 	hspi -> transfer(clkin1);
   digitalWrite(hspi -> pinSS(), HIGH);
-
+	
+	// ADC config
   ADCresert();
-
+	delay(1);
 	digitalWrite(vspi -> pinSS(), LOW);
 	vspi -> transfer(con_reg);
   vspi -> transfer(conf1);
@@ -79,7 +82,6 @@ void setup() {
   vspi -> transfer(conf3);
   digitalWrite(vspi -> pinSS(), HIGH);
 	delay(1);
-
 	digitalWrite(vspi -> pinSS(), LOW);
 	vspi -> transfer(mode_reg);
   vspi -> transfer(mode1);
@@ -88,6 +90,7 @@ void setup() {
   digitalWrite(vspi -> pinSS(), HIGH);
 	delay(1);
 	
+	// Seting up continious read
 	digitalWrite(vspi -> pinSS(), LOW);
 	vspi -> transfer(read_cont); 
 
@@ -95,6 +98,7 @@ void setup() {
 }
 
 void loop() {
+	delay(1);
 	if (digitalRead(VSPI_MISO) == LOW){
 		out1 = vspi -> transfer(0x00);
 		out2 = vspi -> transfer(0x00);
@@ -102,7 +106,10 @@ void loop() {
 
 		var = 0;
 		var = (out1 << 16) | (out2 << 8) | out3;
-		Serial.println(var, BIN);
+		
+		temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
+		//temp = 3.3 * (var / (2 ^ 24)); // unipolar
+		Serial.println(temp);
 	}
 }
 
@@ -116,7 +123,6 @@ void ADCresert(){
 	vspi -> transfer(0xFF); // 40
 	vspi -> transfer(0xFF); // 48
 	digitalWrite(vspi -> pinSS(), HIGH);
-	delay(1);
 }
 
 /*
