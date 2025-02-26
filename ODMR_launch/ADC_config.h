@@ -11,10 +11,16 @@ const byte conf3		 = 0b00000000; // CR7  - CR0 gain == 1 (+-5V)
 										//       UGai
 
 const byte mode_reg  = 0b00001000; // write data to mode register - 24 bits
-const byte mode1 		 = 0b00001000; // MR16 - MR24
-const byte mode2		 = 0b00000000; // MR8  - MR15
-const byte mode3 		 = 0b00000000; // MR0  - MR7	FS == 500 
-
+const byte cont_conv = 0b00001000; // default
+const byte one_read  = 0b00101000; // first byte, continious conversion	
+const byte mode2		 = 0b00000000; // default
+const byte mode3 		 = 0b00000001; //	FS == 1200 
 
 byte out1, out2, out3, pin;
 int32_t var;
+
+// conversion definitions
+// uncomment at least one for it to compile
+// #define SINGLE_CONVERSION
+#define CONTINUOUS_CONVERSION
+// #define CONTINUOUS_READ

@@ -82,34 +82,69 @@ void setup() {
   vspi -> transfer(conf3);
   digitalWrite(vspi -> pinSS(), HIGH);
 	delay(1);
+
+	// If defined:
+	// Setting up single conversion
+	#ifdef SINGLE_CONVERSION
 	digitalWrite(vspi -> pinSS(), LOW);
 	vspi -> transfer(mode_reg);
-  vspi -> transfer(mode1);
+	vspi -> transfer(one_read);
+	vspi -> transfer(mode2);
+	vspi -> transfer(mode3);
+	delay(1);
+	#endif
+	
+	#ifdef CONTINUOUS_CONVERSION
+	digitalWrite(vspi -> pinSS(), LOW);
+	vspi -> transfer(mode_reg);
+  vspi -> transfer(cont_conv);
   vspi -> transfer(mode2);
   vspi -> transfer(mode3);
   digitalWrite(vspi -> pinSS(), HIGH);
 	delay(1);
-	
+	#endif
+
 	// Seting up continious read
+	#ifdef CONTINUOUS_READ
 	digitalWrite(vspi -> pinSS(), LOW);
 	vspi -> transfer(read_cont); 
+	#endif
 
   mPrint(Serial, "Done setting up \n\r"); 
 }
 
 void loop() {
-	delay(1);
-	if (digitalRead(VSPI_MISO) == LOW){
-		out1 = vspi -> transfer(0x00);
-		out2 = vspi -> transfer(0x00);
-		out3 = vspi -> transfer(0x00);
+	// delay(1); // Serial output provides enough delay already
 
-		var = 0;
-		var = (out1 << 16) | (out2 << 8) | out3;
+	if (digitalRead(VSPI_MISO) == LOW){
+		#ifdef SINGLE_CONVERSION
+			digitalWrite(vspi -> pinSS(), LOW);
+			vspi -> transfer(read_data);
+			out1 = vspi -> transfer(0xff);
+			out2 = vspi -> transfer(0xff);
+			out3 = vspi -> transfer(0xff);
+			digitalWrite(vspi -> pinSS(), HIGH);
+		#endif
+
+		#ifdef CONTINUOUS_CONVERSION
+			digitalWrite(vspi -> pinSS(), LOW);
+			vspi -> transfer(read_data);
+			out1 = vspi -> transfer(0xff);
+			out2 = vspi -> transfer(0xff);
+			out3 = vspi -> transfer(0xff);
+		#endif
 		
-		temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
-		//temp = 3.3 * (var / (2 ^ 24)); // unipolar
-		Serial.println(temp);
+		#ifdef CONTINUOUS_READ
+			out1 = vspi -> transfer(0x00);
+			out2 = vspi -> transfer(0x00);
+			out3 = vspi -> transfer(0x00);
+		#endif
+			var = 0;
+			var = (out1 << 16) | (out2 << 8) | out3;
+			
+			temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
+			//temp = 3.3 * (var / (2 ^ 24)); // unipolar
+			Serial.println(temp);
 	}
 }
 
