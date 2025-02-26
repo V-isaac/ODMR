@@ -54,6 +54,7 @@ void setup() {
 	digitalWrite(hspi -> pinSS(), HIGH);
 
 	// AMP config
+	AMPreset();
 	digitalWrite(hspi -> pinSS(), LOW);
 	hspi -> transfer(0x00);
 	hspi -> transfer(an_pin_conf);
@@ -86,28 +87,28 @@ void setup() {
 	// If defined:
 	// Setting up single conversion
 	#ifdef SINGLE_CONVERSION
-	digitalWrite(vspi -> pinSS(), LOW);
-	vspi -> transfer(mode_reg);
-	vspi -> transfer(one_read);
-	vspi -> transfer(mode2);
-	vspi -> transfer(mode3);
-	delay(1);
+		digitalWrite(vspi -> pinSS(), LOW);
+		vspi -> transfer(mode_reg);
+		vspi -> transfer(one_read);
+		vspi -> transfer(mode2);
+		vspi -> transfer(mode3);
+		delay(1);
 	#endif
 	
 	#ifdef CONTINUOUS_CONVERSION
-	digitalWrite(vspi -> pinSS(), LOW);
-	vspi -> transfer(mode_reg);
-  vspi -> transfer(cont_conv);
-  vspi -> transfer(mode2);
-  vspi -> transfer(mode3);
-  digitalWrite(vspi -> pinSS(), HIGH);
-	delay(1);
+		digitalWrite(vspi -> pinSS(), LOW);
+		vspi -> transfer(mode_reg);
+		vspi -> transfer(cont_conv);
+		vspi -> transfer(mode2);
+		vspi -> transfer(mode3);
+		digitalWrite(vspi -> pinSS(), HIGH);
+		delay(1);
 	#endif
 
 	// Seting up continious read
 	#ifdef CONTINUOUS_READ
-	digitalWrite(vspi -> pinSS(), LOW);
-	vspi -> transfer(read_cont); 
+		digitalWrite(vspi -> pinSS(), LOW);
+		vspi -> transfer(read_cont); 
 	#endif
 
   mPrint(Serial, "Done setting up \n\r"); 
@@ -159,6 +160,22 @@ void ADCresert(){
 	vspi -> transfer(0xFF); // 48
 	digitalWrite(vspi -> pinSS(), HIGH);
 }
+void AMPreset(){
+	digitalWrite(hspi -> pinSS(), LOW);
+	hspi -> transfer(0x00);
+	hspi -> transfer(am_serial);
+	hspi -> transfer(am_reset);
+  digitalWrite(hspi -> pinSS(), HIGH);
+	delay(1);
+	digitalWrite(hspi -> pinSS(), LOW);
+	hspi -> transfer(0x00);
+	hspi -> transfer(am_serial);
+	hspi -> transfer(0x00);
+  digitalWrite(hspi -> pinSS(), HIGH);
+
+
+}
+
 
 /*
 // execute on interrupt - we have data to read
