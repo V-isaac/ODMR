@@ -114,8 +114,12 @@ void setup() {
   mPrint(Serial, "Done setting up \n\r"); 
 }
 
+uint8_t i = 0;
+const uint8_t it = 10; // amount of iterations
+int32_t a_temp[it];
+
 void loop() {
-	// delay(1); // Serial output provides enough delay already
+	delay(100/it);
 
 	if (digitalRead(VSPI_MISO) == LOW){
 		#ifdef SINGLE_CONVERSION
@@ -129,7 +133,7 @@ void loop() {
 
 		#ifdef CONTINUOUS_CONVERSION
 			digitalWrite(vspi -> pinSS(), LOW);
-			vspi -> transfer(read_data);
+			vspi -> transfer(read_cont);
 			out1 = vspi -> transfer(0xff);
 			out2 = vspi -> transfer(0xff);
 			out3 = vspi -> transfer(0xff);
@@ -140,12 +144,23 @@ void loop() {
 			out2 = vspi -> transfer(0x00);
 			out3 = vspi -> transfer(0x00);
 		#endif
-			var = 0;
-			var = (out1 << 16) | (out2 << 8) | out3;
-			
-			temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
-			//temp = 3.3 * (var / (2 ^ 24)); // unipolar
+
+		var = 0;
+		var = (out1 << 16) | (out2 << 8) | out3;
+		
+		temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
+		//temp = 3.3 * (var / (2 ^ 24)); // unipolar
+
+		 a_temp[i] = temp;
+		 i++;
+		 if (i == 4){
+		 	for (int j = 0; j < (it -1); j++){
+		 		temp += a_temp[j];
+		 	}
+		 	temp = temp/it;
+		 	i = 0;
 			Serial.println(temp);
+		 }
 	}
 }
 
@@ -160,6 +175,7 @@ void ADCresert(){
 	vspi -> transfer(0xFF); // 48
 	digitalWrite(vspi -> pinSS(), HIGH);
 }
+
 void AMPreset(){
 	digitalWrite(hspi -> pinSS(), LOW);
 	hspi -> transfer(0x00);
@@ -172,8 +188,6 @@ void AMPreset(){
 	hspi -> transfer(am_serial);
 	hspi -> transfer(0x00);
   digitalWrite(hspi -> pinSS(), HIGH);
-
-
 }
 
 
