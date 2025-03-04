@@ -6,7 +6,7 @@
 
 // PWM setup
 // int freq;
-int32_t temp;
+float temp;
 // for messages: 0xFF == 0b11111111
 
 /*
@@ -112,14 +112,16 @@ void setup() {
 	#endif
 
   mPrint(Serial, "Done setting up \n\r"); 
+  mPrint(Serial, "minimum \t maximum \t current value \n\r");
 }
 
 uint8_t i = 0;
-const uint8_t it = 10; // amount of iterations
-int32_t a_temp[it];
+const uint8_t it = 5; // amount of iterations 
+float a_temp[it];
+float minimum = 30000, maximum = -30000;
 
 void loop() {
-	delay(100/it);
+	delay(10/it);
 
 	if (digitalRead(VSPI_MISO) == LOW){
 		#ifdef SINGLE_CONVERSION
@@ -148,18 +150,22 @@ void loop() {
 		var = 0;
 		var = (out1 << 16) | (out2 << 8) | out3;
 		
-		temp = 3.3 * (var / (2 ^ 23) - 1); // bipolar
+		temp = 3.3 * (var / (1 << 23) - 1); // bipolar
 		//temp = 3.3 * (var / (2 ^ 24)); // unipolar
 
-		 a_temp[i] = temp;
-		 i++;
-		 if (i == 4){
+		a_temp[i] = temp;
+		i++;
+
+		if (i == (it - 1)){
 		 	for (int j = 0; j < (it -1); j++){
 		 		temp += a_temp[j];
 		 	}
 		 	temp = temp/it;
 		 	i = 0;
-			Serial.println(temp);
+      if (temp < minimum) minimum = temp -1;
+      if (temp > maximum) maximum = temp +1;
+      mPrint(Serial, minimum, "\t", maximum, "\t"); // current min..max for proper graph plotting
+			Serial.println(temp); // somehow input inverted
 		 }
 	}
 }
@@ -191,11 +197,3 @@ void AMPreset(){
 }
 
 
-/*
-// execute on interrupt - we have data to read
-void ADCread(){
-		//vspi -> beginTransaction(SPISettings(spiClk, ADCORDER, ADC_MODE));
-		//digitalWrite(vspi -> pinSS(), LOW);  
-		//vspi -> transfer(send_data);
-		
-} */
