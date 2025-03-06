@@ -13,3 +13,6 @@ features:
 
 planned: interrupt and appropriate handler for proper ADC read, use of microwave generator 
 
+## v0.2: clean up
+while i was against abstraction over SPI class, it have happened
+over all refactoring and removal of unnecassery constants troughout the files
