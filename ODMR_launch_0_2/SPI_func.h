@@ -5,7 +5,7 @@ float SPI_read(SPIClass* spi, byte msg0, byte msg1, byte msg2, byte msg3){
 	byte out1 = spi -> transfer(msg1);
 	byte out2 = spi -> transfer(msg2);
 	byte out3 = spi -> transfer(msg3);
-	digitalWrite(spi -> pinSS(), HIGH);
+	// digitalWrite(spi -> pinSS(), HIGH); // we shouldn't close the communication during continous read
 
 	float var = 0;
 	var = (out1 << 16) | (out2 << 8)| out3;
