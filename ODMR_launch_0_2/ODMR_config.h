@@ -34,7 +34,6 @@
 
 uint8_t i = 0;
 const uint8_t it = 5;  
-float a_temp[it];
 float minimum = 30000, maximum = -30000;
-float temp;
+
 static const int spiClk = 1000000;

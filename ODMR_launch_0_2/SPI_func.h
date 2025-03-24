@@ -1,5 +1,5 @@
 
-float SPI_read(SPIClass* spi, byte msg0, byte msg1, byte msg2, byte msg3){
+uint32_t SPI_read(SPIClass* spi, byte msg0, byte msg1, byte msg2, byte msg3){
 	digitalWrite(spi -> pinSS(), LOW);
 	spi -> transfer(msg0);
 	byte out1 = spi -> transfer(msg1);

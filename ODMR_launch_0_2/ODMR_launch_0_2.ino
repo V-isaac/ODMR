@@ -49,6 +49,7 @@ void setup() {
 	SPI_write(vspi, mode_reg, cont_conv, mode2, mode3);
 
   mPrint(Serial, "minimum \t maximum \t current value \n\r");
+	delay(2000);
 }
 
 
@@ -56,23 +57,22 @@ void loop() {
 	delay(10/it);
 
 	if (digitalRead(VSPI_MISO) == LOW){
-		var = 0;
-		var = SPI_read(vspi, read_cont, 0xff, 0xff, 0xff);
+		cread = SPI_read(vspi, read_cont, 0xff, 0xff, 0xff);
+		var = cread;
 		
-		temp = 3.3 * (var / (1 << 23) - 1);
-		a_temp[i] = temp;
+		avr= 3.3 / gain * (var/ (1 << 23) - 1);
+		a_temp[i] = avr;
 		i++;
 
 		if (i == (it - 1)) [[unlikely]] {
 		 	for (int j = 0; j < (it -1); j++){
-		 		temp += a_temp[j];
+		 		avr+= a_temp[j];
 		 	}
-		 	temp = temp/it;
+		 	avr = avr / it;
 		 	i = 0;
-      if (temp < minimum) minimum = temp -1;
-      if (temp > maximum) maximum = temp +1;
-      mPrint(Serial, minimum, "\t", maximum, "\t"); 
-			Serial.println(temp); 
+      if (avr< minimum) minimum = avr-1;
+      if (avr> maximum) maximum = avr+1;
+      mPrint(Serial, minimum, "\t", maximum, "\t", avr, "\n\r"); 
 		 }
 	}
 }
