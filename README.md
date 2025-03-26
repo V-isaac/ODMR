@@ -22,6 +22,9 @@ feature:
 read the title
 
 formating:
+
 first character: register to read
+
 second character: read/write operation
+
 trailing 1s and 0s: data to write
