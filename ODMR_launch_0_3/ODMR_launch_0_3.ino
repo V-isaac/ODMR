@@ -208,13 +208,14 @@ void loop() {
 		i++;
 
 		if (i == (it - 1)) [[unlikely]] {
-		 	for (int j = 0; j < (it -1); j++){
+			avr = 0;
+		 	for (int j = 0; j < (it); j++){
 		 		avr+= a_temp[j];
 		 	}
 		 	avr = avr / it;
 		 	i = 0;
-      if (avr< minimum) minimum = avr-1;
-      if (avr> maximum) maximum = avr+1;
+      if (avr< minimum) minimum = avr-.5;
+      if (avr> maximum) maximum = avr+.5;
       Print(Serial, minimum, "\t", maximum, "\t", avr, "\n\r"); 
 		 }
 	}
