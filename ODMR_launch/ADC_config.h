@@ -1,36 +1,30 @@
-// ADC config
-// Contains all the comands and possible constants regarding AD7192
-//										 0b0wREG000
-const byte read_data = 0b01011000; // one time read
-const byte read_cont = 0b01011100; // continious read
+// const byte reg_com 	 = 0b00000000; // first byte 
+byte reg_stat	 = 0b00000000; // read only 8	== s
+byte reg_mod	 = 0b00001000; // 				 24 == m 
+byte reg_conf	 = 0b00010000; // 				 24 == c
+byte reg_data	 = 0b00011000; //				24/32	== d
+byte reg_ID		 = 0b00100000; // read only 8	== i
+byte reg_GP		 = 0b00101000; // 				  8	== g
+byte reg_set	 = 0b00110000; // 				 24 == o
+byte reg_full	 = 0b00111000; // already implemented in loop - use read
 
-const byte con_reg   = 0b00010000; // write data to configuration register - 24 bits
-const byte conf1 		 = 0b00000000; // chop disabled - CR16 - CR23
-const byte conf2		 = 0b00000000; // CR15 - CR8 channel select bits
-const byte conf3		 = 0b00000000; // CR7  - CR0
-										//      ||Gain
-                    //      ||000 5       V 1 < --- works the best so far
-                    //      ||011 625    mV 8
-                    //      ||100 312.5  mV 16
-                    //      ||101 156.2  mV 32
-                    //      ||110 78.125 mV 64
-                    //      ||111 39.06  mV 128
-                    //      |Unipolar/!Bipolar
-                    //      buffer
+// first-time setup
+byte conf1 		 = 0b00000000; 
+byte conf2		 = 0b00000000; 
+byte conf3		 = 0b00000000; 
 
-const byte mode_reg  = 0b00001000; // write data to mode register - 24 bits
-									  //   ModCl
-const byte cont_conv = 0b00001000; // default
-const byte one_read  = 0b00101000; // first byte, single conversion	
+byte cont_conv = 0b00001000; 
+byte mode2		 = 0b00000000; 
+byte mode3 		 = 0b01100000; 	// 000, 011, 100, 101, 110, 111
+byte gain = 1; 								// 1,		8,	 16,	32,	 64,	128
 
-const byte mode2		 = 0b00000000; // default
-const byte mode3 		 = 0b01100000; //	FS == 1200 
-
+// variables related to ADC
 byte out1, out2, out3, pin;
-float var;
+byte in1, in2, in3;
 
-// conversion definitions
-// uncomment at least one for it to compile
-// #define SINGLE_CONVERSION			 // currently broken, but kinda works?
-#define CONTINUOUS_CONVERSION
-// #define CONTINUOUS_READ
+String no_write = "You cannot write to this register";
+
+float avr;
+float a_temp[it];
+float var;
+uint32_t cread;

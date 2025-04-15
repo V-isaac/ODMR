@@ -1,8 +1,32 @@
-// mPrint(Serial, "string", int, long ...);
-// Arduino doesn't allow formated print, using custom-made
-inline void mPrint(Stream&) {}
+// mprint(Serial, "string", int, long ...);
+void Print(Stream&) {}
 template <class H, class... Tail>
-void mPrint(Stream& stream, H head, Tail... tail) {
+void Print(Stream& stream, H head, Tail... tail) {
   stream.print(head);
-  mPrint(stream, tail...);
+  Print(stream, tail...);
 }
+
+uint32_t SerialRead(int l){
+	uint32_t v; // output
+	char c = ' '; // input
+	int i = 0; // amount of bytes read
+
+	while(Serial.available() != 0){
+		if (i == l + 1) break; // exit on last byte read
+
+		c = Serial.read();
+		if (c == '1') {
+			v = v << 1;
+			v |= 1;
+			i++;
+		}	
+		if (c == '0') {
+			v = v << 1;
+			i++;
+		}
+	}
+	return v;
+}
+
+
+

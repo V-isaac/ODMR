@@ -1,41 +1,28 @@
+#include "ODMR_config.h" 	// Pin config and constants
+#include "ADC_config.h"		// ADC constants
+#include "AMP_config.h"		// AMP constants
+
 #include <SPI.h>
+#include "SPI_func.h" 		// Abstraction over SPI objects
 
-#include "ODMR_config.h"
-#include "ADC_config.h"
-#include "AMP_config.h"
 
-// PWM setup
-// int freq;
-float temp;
-// for messages: 0xFF == 0b11111111
-
-/*
-Chip		min	max units
-ADA2200			20 	MHz
-AD7192	10  		kHz
-*/
-static const int spiClk = 1000000;
-
-//uninitialized pointers to SPI objects
 SPIClass *vspi = NULL;
 SPIClass *hspi = NULL;
 
 void setup() {
   Serial.begin(115200);
-  Serial.print("entered setup \n\r");
-	
-	// Setup modulating signal
-  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION); // PWM generator, freq, resolution
-  ledcAttachPin(CLKIN, PWM_CHANNEL);								// pin, PWM generator
-  ledcWrite(PWM_CHANNEL, MAX_DUTY_CYCLE/2);					// generate PWM with said duty
 
-  // initialising SPI protocols, using only 2 available on ESP32
+	// Setting up modulating signal
+  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION); 
+  ledcAttachPin(CLKIN, PWM_CHANNEL);								
+  ledcWrite(PWM_CHANNEL, MAX_DUTY_CYCLE/2);					
+
+	// Setting up SPI protocols
   vspi = new SPIClass(VSPI);
   hspi = new SPIClass(HSPI);
 
-  // Defining SPIs pins
-  vspi -> begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, VSPI_SS);  //SC  MISO, MOSI, SS
-	hspi -> begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);  //SCLK, MISO, MOSI, SS
+  vspi -> begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, VSPI_SS);  
+	hspi -> begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);  
 
 	vspi -> setBitOrder(ADC_ORDER);
 	vspi -> setDataMode(ADC_MODE);
@@ -45,155 +32,210 @@ void setup() {
 	hspi -> setDataMode(AMP_MODE);
 	hspi -> setFrequency(spiClk);
 	
-	// Explicitly setting pins as output/input
   pinMode(vspi -> pinSS(), OUTPUT);  
   pinMode(hspi -> pinSS(), OUTPUT);  
 
-	// Ensure CS is high at initialisation
 	digitalWrite(vspi -> pinSS(), HIGH);
 	digitalWrite(hspi -> pinSS(), HIGH);
 
-	// AMP config
+	// Setting up registers on AMP and ADC
 	AMPreset();
-	digitalWrite(hspi -> pinSS(), LOW);
-	hspi -> transfer(0x00);
-	hspi -> transfer(an_pin_conf);
-	hspi -> transfer(an_pin1);
-  digitalWrite(hspi -> pinSS(), HIGH);
-	delay(1);
-	digitalWrite(hspi -> pinSS(), LOW);
-	hspi -> transfer(0x00);
-	hspi -> transfer(demod);
-	hspi -> transfer(demod1);
-  digitalWrite(hspi -> pinSS(), HIGH);
-	delay(1);
-	digitalWrite(hspi -> pinSS(), LOW);
-	hspi -> transfer(0x00);
-	hspi -> transfer(clkin_conf);
-	hspi -> transfer(clkin1);
-  digitalWrite(hspi -> pinSS(), HIGH);
+	SPI_write(hspi, 0x00, an_pin_conf, an_pin1);
+	SPI_write(hspi, 0x00, demod, demod1);
+	SPI_write(hspi, 0x00, clkin_conf, clkin1);
 	
-	// ADC config
   ADCresert();
-	delay(1);
-	digitalWrite(vspi -> pinSS(), LOW);
-	vspi -> transfer(con_reg);
-  vspi -> transfer(conf1);
-  vspi -> transfer(conf2);
-  vspi -> transfer(conf3);
-  digitalWrite(vspi -> pinSS(), HIGH);
-	delay(1);
+	SPI_write(vspi, reg_conf, conf1, conf2, conf3);
+	SPI_write(vspi, reg_mod, cont_conv, mode2, mode3);
 
-	// If defined:
-	// Setting up single conversion
-	#ifdef SINGLE_CONVERSION
-		digitalWrite(vspi -> pinSS(), LOW);
-		vspi -> transfer(mode_reg);
-		vspi -> transfer(one_read);
-		vspi -> transfer(mode2);
-		vspi -> transfer(mode3);
-		delay(1);
-	#endif
-	
-	#ifdef CONTINUOUS_CONVERSION
-		digitalWrite(vspi -> pinSS(), LOW);
-		vspi -> transfer(mode_reg);
-		vspi -> transfer(cont_conv);
-		vspi -> transfer(mode2);
-		vspi -> transfer(mode3);
-		digitalWrite(vspi -> pinSS(), HIGH);
-		delay(1);
-	#endif
-
-	// Seting up continious read
-	#ifdef CONTINUOUS_READ
-		digitalWrite(vspi -> pinSS(), LOW);
-		vspi -> transfer(read_cont); 
-	#endif
-
-  mPrint(Serial, "Done setting up \n\r"); 
-  mPrint(Serial, "minimum \t maximum \t current value \n\r");
+  Serial.print( "minimum \t maximum \t current value \n\r");
+	delay(2000);
 }
 
-uint8_t i = 0;
-const uint8_t it = 5; // amount of iterations 
-float a_temp[it];
-float minimum = 30000, maximum = -30000;
 
 void loop() {
 	delay(10/it);
 
+	if (Serial.available() != 0)[[unlikely]]{
+		serial_com = Serial.read();
+		switch (serial_com){
+			case 's':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_stat, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					Print(Serial, no_write, "\r\n");
+				}
+				delay(5000);
+				break;
+
+			case 'm':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_mod, 0x00, 0x00, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					spi_val = SerialRead(24); // how many bytes to read
+					Serial.println(spi_val, BIN);
+					in1 = spi_val >> 16;
+					in2 = spi_val >> 8;
+					in3 = spi_val;
+					Serial.println(in1, BIN);
+					Serial.println(in2, BIN);
+					Serial.println(in3, BIN);
+					SPI_write(vspi, reg_mod, in1, in2, in3);
+				}
+				
+				break;
+
+			case 'c':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_conf, 0x00, 0x00, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					spi_val = SerialRead(24);
+					in1 = spi_val >> 16;
+					in2 = spi_val >> 8;
+					in3 = spi_val;
+					SPI_write(vspi, reg_conf, in1, in2, in3);
+				}
+				break;
+
+			case 'd':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_data, 0x00, 0x00, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					spi_val = SerialRead(24);
+					in1 = spi_val >> 16;
+					in2 = spi_val >> 8;
+					in3 = spi_val;
+					SPI_write(vspi, reg_conf, in1, in2, in3);
+				}
+				break;
+
+			case 'i':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_ID, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					Print(Serial, no_write, "\r\n");
+				}
+				break;
+
+			case 'g':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_GP, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					spi_val = SerialRead(8); 
+					in1 = spi_val;
+					SPI_write(vspi, reg_GP, in1);
+				}
+				break;
+			
+			case 'o':	// --------------------
+				serial_com = Serial.read();
+				if (serial_com == 'r'){
+					spi_val = SPI_read(vspi, 0b01000000 | reg_set, 0x00, 0x00, 0x00);
+					Serial.println(spi_val, BIN);
+					delay(5000);
+				}
+				if (serial_com == 'w'){
+					spi_val = SerialRead(24);
+					in1 = spi_val >> 16;
+					in2 = spi_val >> 8;
+					in3 = spi_val;
+					SPI_write(vspi, reg_set, in1, in2, in3);
+				}
+				break;
+		
+			case 'r': // full reset
+				Serial.print("Are you sure? \r\nIt will fully reset chips \r\n");
+				while(Serial.available() == 0){} 
+				serial_com = Serial.read();
+				if(serial_com == 'r'){
+
+					digitalWrite(vspi -> pinSS(), HIGH);
+					digitalWrite(hspi -> pinSS(), HIGH);
+
+					AMPreset();
+					SPI_write(hspi, 0x00, an_pin_conf, an_pin1);
+					SPI_write(hspi, 0x00, demod, demod1);
+					SPI_write(hspi, 0x00, clkin_conf, clkin1);
+					
+					ADCresert();
+					SPI_write(vspi, reg_conf, conf1, conf2, conf3);
+					SPI_write(vspi, reg_mod, cont_conv, mode2, mode3);
+					Print(Serial, "5 seconds to clear output \r\n");
+					delay(5000);
+					Print(Serial, "minimum \t maximum \t current value \r\n");
+
+					break;
+				}
+				else {
+					Serial.print("Did not reset\r\n");
+					delay(5000);
+					break;
+				}
+		}
+	}	
+
+  /* 
 	if (digitalRead(VSPI_MISO) == LOW){
-		#ifdef SINGLE_CONVERSION
-			digitalWrite(vspi -> pinSS(), LOW);
-			vspi -> transfer(read_data);
-			out1 = vspi -> transfer(0xff);
-			out2 = vspi -> transfer(0xff);
-			out3 = vspi -> transfer(0xff);
-			digitalWrite(vspi -> pinSS(), HIGH);
-		#endif
-
-		#ifdef CONTINUOUS_CONVERSION
-			digitalWrite(vspi -> pinSS(), LOW);
-			vspi -> transfer(read_cont);
-			out1 = vspi -> transfer(0xff);
-			out2 = vspi -> transfer(0xff);
-			out3 = vspi -> transfer(0xff);
-		#endif
+		cread = SPI_cread(vspi, 0b01000000 | reg_full, 0xff, 0xff, 0xff);
+		var = cread;
 		
-		#ifdef CONTINUOUS_READ
-			out1 = vspi -> transfer(0x00);
-			out2 = vspi -> transfer(0x00);
-			out3 = vspi -> transfer(0x00);
-		#endif
-
-		var = 0;
-		var = (out1 << 16) | (out2 << 8) | out3;
-		
-		temp = 3.3 * (var / (1 << 23) - 1); // bipolar
-		//temp = 3.3 * (var / (2 ^ 24)); // unipolar
-
-		a_temp[i] = temp;
+		avr= 3.3 / gain * (var/ (1 << 23) - 1);
+		a_temp[i] = avr;
 		i++;
 
-		if (i == (it - 1)){
-		 	for (int j = 0; j < (it -1); j++){
-		 		temp += a_temp[j];
+		if (i == (it - 1)) [[unlikely]] {
+			avr = 0;
+		 	for (int j = 0; j < (it); j++){
+		 		avr+= a_temp[j];
 		 	}
-		 	temp = temp/it;
+		 	avr = avr / it;
 		 	i = 0;
-      if (temp < minimum) minimum = temp -1;
-      if (temp > maximum) maximum = temp +1;
-      mPrint(Serial, minimum, "\t", maximum, "\t"); // current min..max for proper graph plotting
-			Serial.println(temp); // somehow input inverted
+      if (avr< minimum) minimum = avr-.5;
+      if (avr> maximum) maximum = avr+.5;
+      Print(Serial, minimum, "\t", maximum, "\t", avr, "\n\r"); 
 		 }
 	}
+	*/
 }
 
 
 void ADCresert(){
 	digitalWrite(vspi -> pinSS(), LOW);
-	vspi -> transfer(0xFF); // 8 bits each
-	vspi -> transfer(0xFF); // 16
-	vspi -> transfer(0xFF); // 24
-	vspi -> transfer(0xFF); // 32
-	vspi -> transfer(0xFF); // 40
-	vspi -> transfer(0xFF); // 48
+	vspi -> transfer(0xff);
+	vspi -> transfer(0xff);
+	vspi -> transfer(0xff);
+	vspi -> transfer(0xff);
+	vspi -> transfer(0xff);
 	digitalWrite(vspi -> pinSS(), HIGH);
 }
 
 void AMPreset(){
-	digitalWrite(hspi -> pinSS(), LOW);
-	hspi -> transfer(0x00);
-	hspi -> transfer(am_serial);
-	hspi -> transfer(am_reset);
-  digitalWrite(hspi -> pinSS(), HIGH);
-	delay(1);
-	digitalWrite(hspi -> pinSS(), LOW);
-	hspi -> transfer(0x00);
-	hspi -> transfer(am_serial);
-	hspi -> transfer(0x00);
-  digitalWrite(hspi -> pinSS(), HIGH);
+	SPI_write(hspi, 0x00, am_serial, am_reset);
+	SPI_write(hspi, 0x00, am_serial, 0x00);
 }
 
 
